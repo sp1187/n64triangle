@@ -22,7 +22,7 @@ uint32_t dxhdy = FIXED_16_16(0,0);
 uint32_t xm = FIXED_16_16(50,0);
 uint32_t dxmdy = FIXED_16_16(0,0);
 
-enum curvar_t {
+enum {
 	YL,
 	YM,
 	YH,
@@ -85,6 +85,8 @@ int main(void){
 
 		}
 
+		graphics_draw_text(disp, 260, 20, major ? "Right" : "Left");
+
 		rdp_sync(SYNC_PIPE);
 		rdp_set_default_clipping();
 		rdp_attach_display(disp);
@@ -117,6 +119,9 @@ int main(void){
 		else if(keys.c[0].L) {
 			curvar = (curvar - 1 + NUM_VARS) % NUM_VARS;
 		}
+		else if(keys.c[0].A) {
+			major = !major;
+		}
 		else if(keys.c[0].right){
 			switch(curvar){
 				case YL: yl += 4; break;
@@ -125,9 +130,9 @@ int main(void){
 				case XL: xl += 65536; break;
 				case XM: xm += 65536; break;
 				case XH: xh += 65536; break;
-				case DXLDY: dxldy += 65536; break;
-				case DXMDY: dxmdy += 65536; break;
-				case DXHDY: dxhdy += 65536; break;
+				case DXLDY: dxldy += 16384; break;
+				case DXMDY: dxmdy += 16384; break;
+				case DXHDY: dxhdy += 16384; break;
 				default: break;
 
 			}
@@ -140,9 +145,9 @@ int main(void){
 				case XL: xl -= 65536; break;
 				case XM: xm -= 65536; break;
 				case XH: xh -= 65536; break;
-				case DXLDY: dxldy -= 65536; break;
-				case DXMDY: dxmdy -= 65536; break;
-				case DXHDY: dxhdy -= 65536; break;
+				case DXLDY: dxldy -= 16384; break;
+				case DXMDY: dxmdy -= 16384; break;
+				case DXHDY: dxhdy -= 16384; break;
 				default: break;
 			}
 		}
