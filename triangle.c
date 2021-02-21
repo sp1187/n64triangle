@@ -16,7 +16,11 @@ static bitdepth_t bit = DEPTH_32_BPP;
 #define INTPART_11_2(x) (x >> 2)
 #define INTPART_16_16(x) (x >> 16)
 
-#define TOFLOAT_16_16(x) (x / 65536.0)
+#define TOFLOAT_11_2(x) (x / 4.0f)
+#define TOFLOAT_16_16(x) (x / 65536.0f)
+
+#define DPC_START_REG (*((volatile uint32_t *)0xA4100000))
+#define DPC_END_REG (*((volatile uint32_t *)0xA4100004))
 
 bool major = 1;
 int32_t yl = FIXED_11_2(150,0);
@@ -47,8 +51,8 @@ void rdp_send(uint32_t *data, int length){
 
 	disable_interrupts();
 
-	((volatile uint32_t *)0xA4100000)[0] = ((uint32_t)data | 0xA0000000);
-	((volatile uint32_t *)0xA4100000)[1] = ((uint32_t)data | 0xA0000000) + length;
+	DPC_START_REG = (uint32_t) data;
+	DPC_END_REG = (uint32_t) data + length;
 
 	enable_interrupts();
 }
@@ -64,6 +68,37 @@ void graphics_printf(display_context_t disp, int x, int y, char *szFormat, ...){
 	va_end(pArgs);
 
 	graphics_draw_text(disp, x, y, szBuffer);
+}
+
+void get_dxline_coords(int32_t x, int32_t y, int32_t dxdy, int* x1, int* y1, int* x2, int* y2) {
+	float k = TOFLOAT_16_16(dxdy);
+	float x_top = TOFLOAT_16_16(x) - TOFLOAT_11_2(y) * k;
+	float x_bottom = x_top + k*HEIGHT;
+	if (x_top < 0) {
+		*x1 = 0;
+		*y1 = (*x1-x_top) / k;
+	}
+	else if (x_top >= WIDTH) {
+		*x1 = WIDTH - 1;
+		*y1 = (*x1-x_top) / k;
+	}
+	else {
+		*x1 = x_top;
+		*y1 = 0;
+	}
+
+	if (x_bottom < 0) {
+		*x2 = 0;
+		*y2 = (*x2-x_top) / k;
+	}
+	else if (x_bottom >= WIDTH) {
+		*x2 = WIDTH - 1;
+		*y2 = (*x2-x_top) / k;
+	}
+	else {
+		*x2 = x_bottom;
+		*y2 = HEIGHT - 1;
+	}
 }
 
 int main(void){
@@ -89,18 +124,17 @@ int main(void){
 
 		graphics_fill_screen(disp,0x000000FF);
 
-		switch(curvar){
-			case YL: graphics_printf(disp,20,20,"YL %d", INTPART_11_2(yl)); break;
-			case YM: graphics_printf(disp,20,20,"YM %d", INTPART_11_2(ym)); break;
-			case YH: graphics_printf(disp,20,20,"YH %d", INTPART_11_2(yh)); break;
-			case XL: graphics_printf(disp,20,20,"XL %d", INTPART_16_16(xl)); break;
-			case XM: graphics_printf(disp,20,20,"XM %d", INTPART_16_16(xm)); break;
-			case XH: graphics_printf(disp,20,20,"XH %d", INTPART_16_16(xh)); break;
-			case DXLDY: graphics_printf(disp,20,20,"DxLDy %.2f", TOFLOAT_16_16(dxldy)); break;
-			case DXMDY: graphics_printf(disp,20,20,"DxMDy %.2f", TOFLOAT_16_16(dxmdy)); break;
-			case DXHDY: graphics_printf(disp,20,20,"DxHDy %.2f", TOFLOAT_16_16(dxhdy)); break;
-			default: break;
-		}
+		int x1, y1, x2, y2;
+
+		//DxDy lines
+		get_dxline_coords(xh, yh, dxhdy, &x1, &y1, &x2, &y2);
+		graphics_draw_line(disp,x1,y1,x2,y2,0x80FF8000);
+
+		get_dxline_coords(xm, yh, dxmdy, &x1, &y1, &x2, &y2);
+		graphics_draw_line(disp,x1,y1,x2,y2,0x40FF4000);
+
+		get_dxline_coords(xl, ym, dxldy, &x1, &y1, &x2, &y2);
+		graphics_draw_line(disp,x1,y1,x2,y2,0x00FF0000);
 
 		//Y lines
 		graphics_draw_line(disp,0,INTPART_11_2(yh),WIDTH-1,INTPART_11_2(yh),0xFFFF0000);
@@ -111,6 +145,19 @@ int main(void){
 		graphics_draw_line(disp,INTPART_16_16(xh),0,INTPART_16_16(xh),HEIGHT-1,0x00FFFF00);
 		graphics_draw_line(disp,INTPART_16_16(xm),0,INTPART_16_16(xm),HEIGHT-1,0x0080FF00);
 		graphics_draw_line(disp,INTPART_16_16(xl),0,INTPART_16_16(xl),HEIGHT-1,0x0000FF00);
+
+		switch(curvar){
+			case YL: graphics_printf(disp,20,20,"YL %d", INTPART_11_2(yl)); break;
+			case YM: graphics_printf(disp,20,20,"YM %d", INTPART_11_2(ym)); break;
+			case YH: graphics_printf(disp,20,20,"YH %d", INTPART_11_2(yh)); break;
+			case XL: graphics_printf(disp,20,20,"XL %d", INTPART_16_16(xl)); break;
+			case XM: graphics_printf(disp,20,20,"XM %d", INTPART_16_16(xm)); break;
+			case XH: graphics_printf(disp,20,20,"XH %d", INTPART_16_16(xh)); break;
+			case DXLDY: graphics_printf(disp,20,20,"DxLDy %.3f", TOFLOAT_16_16(dxldy)); break;
+			case DXMDY: graphics_printf(disp,20,20,"DxMDy %.3f", TOFLOAT_16_16(dxmdy)); break;
+			case DXHDY: graphics_printf(disp,20,20,"DxHDy %.3f", TOFLOAT_16_16(dxhdy)); break;
+			default: break;
+		}
 
 		graphics_printf(disp, 260, 20, major ? "Right" : "Left");
 
@@ -147,9 +194,9 @@ int main(void){
 				case XL: xl += FIXED_16_16(1,0); break;
 				case XM: xm += FIXED_16_16(1,0); break;
 				case XH: xh += FIXED_16_16(1,0); break;
-				case DXLDY: dxldy += FIXED_16_16(0,16384); break;
-				case DXMDY: dxmdy += FIXED_16_16(0,16384); break;
-				case DXHDY: dxhdy += FIXED_16_16(0,16384); break;
+				case DXLDY: dxldy += FIXED_16_16(0,8192); break;
+				case DXMDY: dxmdy += FIXED_16_16(0,8192); break;
+				case DXHDY: dxhdy += FIXED_16_16(0,8192); break;
 				default: break;
 
 			}
@@ -162,9 +209,9 @@ int main(void){
 				case XL: xl -= FIXED_16_16(1,0); break;
 				case XM: xm -= FIXED_16_16(1,0); break;
 				case XH: xh -= FIXED_16_16(1,0); break;
-				case DXLDY: dxldy -= FIXED_16_16(0,16384); break;
-				case DXMDY: dxmdy -= FIXED_16_16(0,16384); break;
-				case DXHDY: dxhdy -= FIXED_16_16(0,16384); break;
+				case DXLDY: dxldy -= FIXED_16_16(0,8192); break;
+				case DXMDY: dxmdy -= FIXED_16_16(0,8192); break;
+				case DXHDY: dxhdy -= FIXED_16_16(0,8192); break;
 				default: break;
 			}
 		}
