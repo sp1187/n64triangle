@@ -219,6 +219,17 @@ int main(void){
 			// Invert left/right major
 			major = !major;
 		}
+		else if (keys.c[0].B) {
+			// Flip triangle horizontally
+			major = !major;
+			xm = xh - (xm - xl);
+			int32_t tmp = xl;
+			xl = xh;
+			xh = tmp;
+			dxldy = -dxldy;
+			dxmdy = -dxmdy;
+			dxhdy = -dxhdy;
+		}
 		else if (keys.c[0].right) {
 			// Increase variable value
 			switch (curvar) {
