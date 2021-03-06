@@ -73,7 +73,7 @@ void graphics_printf(display_context_t disp, int x, int y, char *szFormat, ...){
 void get_dxline_coords(int32_t x, int32_t y, int32_t dxdy, int* x1, int* y1, int* x2, int* y2) {
 	float k = TOFLOAT_16_16(dxdy);
 	float x_top = TOFLOAT_16_16(x) - TOFLOAT_11_2(y) * k;
-	float x_bottom = x_top + k*HEIGHT;
+	float x_bottom = x_top + k*(HEIGHT - 1);
 	if (x_top < 0) {
 		*x1 = 0;
 		*y1 = (*x1-x_top) / k;
