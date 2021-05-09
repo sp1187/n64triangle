@@ -23,14 +23,14 @@ static bitdepth_t bit = DEPTH_32_BPP;
 #define DPC_END_REG (*((volatile uint32_t *)0xA4100004))
 
 bool major = 1;
-int16_t yl = FIXED_11_2(150,0);
-int16_t ym = FIXED_11_2(50,0);
-int16_t yh = FIXED_11_2(50,0);
-int32_t xl = FIXED_16_16(150,0);
+int16_t yl = FIXED_11_2(170,0);
+int16_t ym = FIXED_11_2(70,0);
+int16_t yh = FIXED_11_2(70,0);
+int32_t xl = FIXED_16_16(210,0);
 int32_t dxldy = FIXED_16_16(-1,0);
-int32_t xh = FIXED_16_16(50,0);
+int32_t xh = FIXED_16_16(110,0);
 int32_t dxhdy = FIXED_16_16(0,0);
-int32_t xm = FIXED_16_16(50,0);
+int32_t xm = FIXED_16_16(110,0);
 int32_t dxmdy = FIXED_16_16(0,0);
 
 enum {
