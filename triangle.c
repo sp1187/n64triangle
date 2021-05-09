@@ -125,8 +125,8 @@ int main(void){
 		// Create RDP triangle command
 		while(!(disp = display_lock()));
 
-		triangle_commands[0] = 0x08000000 | (major << 23) | yl;
-		triangle_commands[1] = (ym << 16) | yh;
+		triangle_commands[0] = 0x08000000 | (major << 23) | (yl & 0xffff);
+		triangle_commands[1] = ((ym & 0xffff) << 16) | (yh & 0xffff);
 		triangle_commands[2] = xl;
 		triangle_commands[3] = dxldy;
 		triangle_commands[4] = xh;
