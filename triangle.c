@@ -59,15 +59,16 @@ void rdp_send(uint32_t *data, int length){
 
 uint32_t triangle_commands[8] __attribute__ ((aligned (8)));
 
-void graphics_printf(display_context_t disp, int x, int y, char *szFormat, ...){
-	char szBuffer[64];
+__attribute__((format (printf, 4, 5)))
+void graphics_printf(display_context_t disp, int x, int y, char *format, ...) {
+	char buffer[64];
 
-	va_list pArgs;
-	va_start(pArgs, szFormat);
-	vsnprintf(szBuffer, sizeof szBuffer, szFormat, pArgs);
-	va_end(pArgs);
+	va_list args;
+	va_start(args, format);
+	vsnprintf(buffer, sizeof buffer, format, args);
+	va_end(args);
 
-	graphics_draw_text(disp, x, y, szBuffer);
+	graphics_draw_text(disp, x, y, buffer);
 }
 
 bool get_dxline_coords(int32_t x, int32_t y, int32_t dxdy, int* x1, int* y1, int* x2, int* y2) {
@@ -187,7 +188,7 @@ int main(void){
 			default: break;
 		}
 
-		graphics_printf(disp, 260, 20, major ? "Right" : "Left");
+		graphics_draw_text(disp, 260, 20, major ? "Right" : "Left");
 
 		// Send triangle to RDP
 		rdp_sync(SYNC_PIPE);
