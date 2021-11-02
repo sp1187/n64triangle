@@ -4,9 +4,6 @@
 #include <stdbool.h>
 #include <libdragon.h>
 
-static resolution_t res = RESOLUTION_320x240;
-static bitdepth_t bit = DEPTH_32_BPP;
-
 #define WIDTH 320
 #define HEIGHT 240
 
@@ -116,9 +113,7 @@ int main(void){
 	// Initialize libdragon
 	static display_context_t disp = 0;
 
-	init_interrupts();
-
-	display_init(res,bit,2,GAMMA_NONE,ANTIALIAS_RESAMPLE);
+	display_init(RESOLUTION_320x240, DEPTH_32_BPP, 2, GAMMA_NONE, ANTIALIAS_RESAMPLE);
 	controller_init();
 	rdp_init();
 
