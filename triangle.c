@@ -16,9 +16,6 @@
 #define TOFLOAT_11_2(x) (x / 4.0f)
 #define TOFLOAT_16_16(x) (x / 65536.0f)
 
-#define DPC_START_REG (*((volatile uint32_t *)0xA4100000))
-#define DPC_END_REG (*((volatile uint32_t *)0xA4100004))
-
 bool major = 1;
 int16_t yl = FIXED_11_2(170,0);
 int16_t ym = FIXED_11_2(70,0);
@@ -42,17 +39,6 @@ enum {
 	DXHDY,
 	NUM_VARS
 } curvar = YL;
-
-void rdp_send(uint32_t *data, int length){
-	data_cache_hit_writeback_invalidate(data, length);
-
-	disable_interrupts();
-
-	DPC_START_REG = (uint32_t) data;
-	DPC_END_REG = (uint32_t) data + length;
-
-	enable_interrupts();
-}
 
 uint32_t triangle_commands[8] __attribute__ ((aligned (8)));
 
@@ -115,13 +101,17 @@ int main(void){
 
 	display_init(RESOLUTION_320x240, DEPTH_32_BPP, 2, GAMMA_NONE, ANTIALIAS_RESAMPLE);
 	controller_init();
-	rdp_init();
+	rdpq_init();
+
+	rdpq_set_mode_standard();
+	rdpq_mode_combiner(RDPQ_COMBINER_FLAT);
+	rdpq_set_prim_color(RGBA32(0xFF, 0xFF, 0xFF, 0xFF));
 
 	for(;;){
-		// Create RDP triangle command
-		while(!(disp = display_lock()));
+		disp = display_get();
 
-		triangle_commands[0] = 0x08000000 | (major << 23) | (yl & 0xffff);
+		// Generate low-level RDP triangle command manually
+		triangle_commands[0] = (RDPQ_CMD_TRI << 24) | (major << 23) | (yl & 0xffff);
 		triangle_commands[1] = ((ym & 0xffff) << 16) | (yh & 0xffff);
 		triangle_commands[2] = xl;
 		triangle_commands[3] = dxldy;
@@ -186,16 +176,10 @@ int main(void){
 		graphics_draw_text(disp, 260, 20, major ? "Right" : "Left");
 
 		// Send triangle to RDP
-		rdp_sync(SYNC_PIPE);
-		rdp_set_default_clipping();
-		rdp_attach_display(disp);
-
-		rdp_enable_blend_fill();
-		rdp_set_blend_color(0xFFFFFFFF);
-
-		rdp_send(triangle_commands,sizeof triangle_commands);
-		rdp_sync(SYNC_PIPE);
-		rdp_detach_display();
+		rdpq_attach(disp, NULL);
+		data_cache_hit_writeback_invalidate(triangle_commands, sizeof triangle_commands);
+		rdpq_exec(triangle_commands, sizeof triangle_commands);
+		rdpq_detach();
 
 		display_show(disp);
 
