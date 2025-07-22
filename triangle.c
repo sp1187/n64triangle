@@ -100,7 +100,7 @@ int main(void){
 	static display_context_t disp = 0;
 
 	display_init(RESOLUTION_320x240, DEPTH_32_BPP, 2, GAMMA_NONE, ANTIALIAS_RESAMPLE);
-	controller_init();
+	joypad_init();
 	rdpq_init();
 
 	rdpq_set_mode_standard();
@@ -184,22 +184,22 @@ int main(void){
 		display_show(disp);
 
 		// Handle controller input and change values
-		controller_scan();
-		struct controller_data keys = get_keys_down();
+		joypad_poll();
+		joypad_buttons_t buttons = joypad_get_buttons_pressed(JOYPAD_PORT_1);
 
-		if (keys.c[0].R) {
+		if (buttons.r) {
 			// Switch to next variable
 			curvar = (curvar + 1) % NUM_VARS;
 		}
-		else if (keys.c[0].L) {
+		else if (buttons.l) {
 			// Switch to previous variable
 			curvar = (curvar - 1 + NUM_VARS) % NUM_VARS;
 		}
-		else if (keys.c[0].A) {
+		else if (buttons.a) {
 			// Invert left/right major
 			major = !major;
 		}
-		else if (keys.c[0].B) {
+		else if (buttons.b) {
 			// Flip triangle horizontally
 			major = !major;
 			xm = xh - (xm - xl);
@@ -210,7 +210,7 @@ int main(void){
 			dxmdy = -dxmdy;
 			dxhdy = -dxhdy;
 		}
-		else if (keys.c[0].right) {
+		else if (buttons.d_right) {
 			// Increase variable value
 			switch (curvar) {
 				case YL: yl += FIXED_11_2(1, 0); break;
@@ -225,7 +225,7 @@ int main(void){
 				default: break;
 			}
 		}
-		else if (keys.c[0].left){
+		else if (buttons.d_left){
 			// Decrease variable value
 			switch (curvar) {
 				case YL: yl -= FIXED_11_2(1, 0); break;
